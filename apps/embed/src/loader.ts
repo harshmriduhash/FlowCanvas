@@ -79,6 +79,31 @@
 
         const content = document.createElement('div');
         content.innerHTML = `<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; font-weight: 500;">${step.content}</p>`;
+
+        if (step.type === 'nps') {
+            const scale = document.createElement('div');
+            scale.style.cssText = 'display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 20px;';
+            for (let i = 1; i <= 10; i++) {
+                const btn = document.createElement('button');
+                btn.innerText = i.toString();
+                btn.style.cssText = `
+                    height: 24px;
+                    border-radius: 4px;
+                    border: 1px solid rgba(0,0,0,0.1);
+                    background: white;
+                    font-size: 10px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    color: #16201C;
+                `;
+                btn.onclick = () => {
+                    trackEvent('nps_score', i.toString());
+                    advance();
+                };
+                scale.appendChild(btn);
+            }
+            content.appendChild(scale);
+        }
         el.appendChild(content);
 
         const footer = document.createElement('div');
