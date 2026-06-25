@@ -14,15 +14,22 @@ export async function POST(req: Request) {
         const codeHash = await hash(code, 10);
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        await db.otpCode.create({
-            data: {
-                email,
-                codeHash,
-                expiresAt,
-            },
-        });
+        console.log(`[AUTH] Attempting to create OTP for ${email}`);
 
-        if (process.env.NODE_ENV === "production") {
+        try {
+            await db.otpCode.create({
+                data: {
+                    email,
+                    codeHash,
+                    expiresAt,
+                },
+            });
+        } catch (dbErr) {
+            console.error("[AUTH] Database error creating OTP:", dbErr);
+            throw new Error("Database error");
+        }
+
+        if (process.env.NODE_ENV === "production" && process.env.RESEND_API_KEY) {
             await resend.emails.send({
                 from: "FlowCanvas <auth@flowcanvas.dev>",
                 to: email,
@@ -30,12 +37,14 @@ export async function POST(req: Request) {
                 text: `Your verification code is: ${code}`,
             });
         } else {
-            console.log(`[AUTH] OTP for ${email}: ${code}`);
+            console.log("************************************************");
+            console.log(`[AUTH] CODE FOR ${email}: ${code}`);
+            console.log("************************************************");
         }
 
         return NextResponse.json({ message: "Code sent" });
-    } catch (err) {
-        console.error(err);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    } catch (err: any) {
+        console.error("[AUTH] OTP Request Error:", err);
+        return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
     }
 }
