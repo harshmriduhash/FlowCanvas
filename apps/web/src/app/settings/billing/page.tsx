@@ -8,7 +8,8 @@ import {
     Zap,
     Users,
     Activity,
-    Lock
+    Lock,
+    RefreshCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

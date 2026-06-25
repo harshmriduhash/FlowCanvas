@@ -13,7 +13,8 @@ import {
     Palette,
     Layers,
     Clock,
-    Zap
+    Zap,
+    BarChart3
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -61,47 +62,62 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
         };
     }, []);
 
-    const addTooltip = () => {
+    const addStep = (type: "tooltip" | "modal" | "hotspot" | "nps") => {
         if (!fabricCanvas.current) return;
 
         const id = Math.random().toString(36).substr(2, 9);
-        const tooltip = new fabric.Rect({
-            left: 100,
-            top: 100,
-            width: 200,
-            height: 100,
-            fill: "white",
-            stroke: "#0E7C66",
-            strokeWidth: 2,
-            rx: 12,
-            ry: 12,
-            shadow: new fabric.Shadow({
-                color: "rgba(0,0,0,0.1)",
-                blur: 10,
-                offsetX: 0,
-                offsetY: 4
-            })
-        });
+        let obj: fabric.Object;
 
-        const text = new fabric.IText("Click here to start", {
-            fontSize: 14,
-            left: 115,
-            top: 115,
-            fontFamily: "Inter",
-            fill: "#16201C"
-        });
+        if (type === "nps") {
+            const rect = new fabric.Rect({
+                width: 300,
+                height: 150,
+                fill: "white",
+                stroke: "#0E7C66",
+                strokeWidth: 2,
+                rx: 16,
+                ry: 16
+            });
+            const text = new fabric.IText("How likely are you to recommend us?", {
+                fontSize: 14,
+                fontFamily: "Inter",
+                left: 20,
+                top: 20,
+                width: 260
+            });
+            const rating = new fabric.IText("1 2 3 4 5 6 7 8 9 10", {
+                fontSize: 12,
+                fontFamily: "Inter",
+                left: 20,
+                top: 80,
+                fill: "#94A3B8"
+            });
+            obj = new fabric.Group([rect, text, rating], { left: 400, top: 300 });
+        } else {
+            // Defaulting to tooltip for others in this simplified refactor
+            const rect = new fabric.Rect({
+                width: 200,
+                height: 100,
+                fill: "white",
+                stroke: "#0E7C66",
+                strokeWidth: 2,
+                rx: 12,
+                ry: 12
+            });
+            const text = new fabric.IText("New Step", {
+                fontSize: 14,
+                left: 20,
+                top: 20
+            });
+            obj = new fabric.Group([rect, text], { left: 400, top: 300 });
+        }
 
-        const group = new fabric.Group([tooltip, text], {
-            left: 400,
-            top: 300,
-        });
+        (obj as any).id = id;
+        (obj as any).type = type;
 
-        (group as any).id = id;
-        (group as any).type = "tooltip";
-
-        fabricCanvas.current.add(group);
-        fabricCanvas.current.setActiveObject(group);
-        setSteps(prev => [...prev, { id, type: "tooltip", content: "Click here to start" }]);
+        fabricCanvas.current.add(obj);
+        fabricCanvas.current.setActiveObject(obj);
+        setSteps(prev => [...prev, { id, type, content: type === "nps" ? "How likely are you to recommend us?" : "New Step" }]);
         setActiveStepId(id);
         saveFlow();
     };
@@ -243,10 +259,22 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
                             Add Modal
                         </span>
                     </button>
-                    <button className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-surface-muted hover:text-ink transition-all group relative">
+                    <button
+                        onClick={() => addStep("hotspot")}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-surface-muted hover:text-ink transition-all group relative"
+                    >
                         <HelpCircle className="w-5 h-5" />
                         <span className="absolute left-14 bg-ink text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                             Add Hotspot
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => addStep("nps")}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-surface-muted hover:text-ink transition-all group relative"
+                    >
+                        <BarChart3 className="w-5 h-5" />
+                        <span className="absolute left-14 bg-ink text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            Add NPS
                         </span>
                     </button>
 
@@ -292,7 +320,7 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
                             </div>
                         ))}
                         <button
-                            onClick={addTooltip}
+                            onClick={() => addStep("tooltip")}
                             className="w-32 h-20 rounded-lg border-2 border-dashed border-border-subtle flex flex-col items-center justify-center flex-shrink-0 text-gray-mute hover:border-emerald-600 hover:text-emerald-600 transition-all"
                         >
                             <PlusSquare className="w-5 h-5 mb-1" />
