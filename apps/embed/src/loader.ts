@@ -181,10 +181,35 @@
                 flowId: activeFlow.id,
                 stepId: type === 'view' ? id : undefined,
                 eventType: type,
-                sessionId: localStorage.getItem('fc_session_id') || 'anon'
+                anonymousVisitorId: getVisitorId()
             })
         });
     }
+
+    function identify(properties: Record<string, any>) {
+        fetch(`${API_BASE}/events`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                projectKey,
+                anonymousVisitorId: getVisitorId(),
+                properties
+            })
+        });
+    }
+
+    function getVisitorId() {
+        let id = localStorage.getItem('fc_visitor_id');
+        if (!id) {
+            id = 'fc_v_' + Math.random().toString(36).substring(2, 11);
+            localStorage.setItem('fc_visitor_id', id);
+        }
+        return id;
+    }
+
+    // Expose identify to the window object
+    (window as any).FlowCanvas = {
+        identify
+    };
 
     if (document.readyState === 'complete') {
         init();

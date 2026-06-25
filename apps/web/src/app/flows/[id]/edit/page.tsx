@@ -418,6 +418,46 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
                     </div>
                 </aside>
             </div>
+
+            {/* Bottom Sequencer Strip (PRD 8.3) */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 h-24 bg-white/80 backdrop-blur-xl border border-border-subtle rounded-[24px] p-3 flex gap-3 shadow-2xl z-20 overflow-x-auto min-w-[500px]">
+                {steps.map((step, i) => (
+                    <div
+                        key={step.id}
+                        onClick={() => setActiveStepId(step.id)}
+                        className={cn(
+                            "h-full aspect-video rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center p-3 relative group",
+                            activeStepId === step.id
+                                ? "border-emerald-600 bg-emerald-50 ring-4 ring-emerald-600/5 shadow-inner"
+                                : "border-border-subtle bg-surface hover:border-emerald-300"
+                        )}
+                    >
+                        <div className={cn(
+                            "absolute top-1.5 left-2 text-[10px] font-black uppercase tracking-tighter",
+                            activeStepId === step.id ? "text-emerald-600" : "text-gray-mute/40"
+                        )}>
+                            STEP 0{i + 1}
+                        </div>
+                        <div className="flex flex-col items-center gap-1.5 mt-2">
+                            <div className={cn(
+                                "w-6 h-6 rounded-lg flex items-center justify-center",
+                                activeStepId === step.id ? "bg-emerald-600 text-white" : "bg-surface-muted text-gray-mute"
+                            )}>
+                                <MousePointer className="w-3 h-3" />
+                            </div>
+                            <span className="text-[10px] font-bold text-ink truncate w-full text-center capitalize">{step.type}</span>
+                        </div>
+                    </div>
+                ))}
+
+                <button
+                    onClick={() => addStep("tooltip")}
+                    className="h-full aspect-video rounded-xl border-2 border-dashed border-border-subtle flex flex-col items-center justify-center hover:border-emerald-600 hover:bg-emerald-50 transition-all group"
+                >
+                    <Plus className="w-5 h-5 text-gray-mute group-hover:text-emerald-600 transition-transform group-hover:scale-110" />
+                    <span className="text-[10px] font-bold text-gray-mute group-hover:text-emerald-700 mt-1">Add step</span>
+                </button>
+            </div>
         </div>
     );
 }

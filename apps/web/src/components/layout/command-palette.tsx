@@ -26,7 +26,7 @@ export function CommandPalette() {
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] bg-ink/40 backdrop-blur-[4px]">
             <div className="w-full max-w-[640px] px-4">
                 <Command
-                    onKeyDown={(e) => {
+                    onKeyDown={(e: React.KeyboardEvent) => {
                         if (e.key === "Escape") setOpen(false);
                     }}
                     className="bg-white/85 backdrop-blur-[20px] saturate-[180%] border border-white/20 rounded-[20px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
