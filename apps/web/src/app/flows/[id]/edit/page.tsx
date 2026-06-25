@@ -8,11 +8,17 @@ import {
     MousePointer,
     PlusSquare,
     AlertCircle,
-    HelpCircle
+    HelpCircle,
+    Sparkles,
+    Palette,
+    Layers,
+    Clock,
+    Zap
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import * as fabric from "fabric";
+import { toast } from "sonner";
 
 export default function FlowEditorPage({ params }: { params: { id: string } }) {
     const [saving, setSaving] = useState(false);
@@ -20,6 +26,7 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
     const [selectedTool, setSelectedTool] = useState("select");
     const [activeStepId, setActiveStepId] = useState<string | null>(null);
     const [steps, setSteps] = useState<any[]>([]);
+    const [suggesting, setSuggesting] = useState(false);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricCanvas = useRef<fabric.Canvas | null>(null);
@@ -96,6 +103,74 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
         fabricCanvas.current.setActiveObject(group);
         setSteps(prev => [...prev, { id, type: "tooltip", content: "Click here to start" }]);
         setActiveStepId(id);
+        saveFlow();
+    };
+
+    const handleSuggestCopy = async (stepId: string) => {
+        setSuggesting(true);
+        try {
+            const step = steps.find(s => s.id === stepId);
+            const res = await fetch("/api/analytics/insights", {
+                method: "POST",
+                body: JSON.stringify({
+                    projectId: params.id, // Assuming project ID for context
+                    context: "step_copy",
+                    draft: step?.content
+                })
+            });
+            const data = await res.json();
+            if (data.suggestion) {
+                updateStepContent(stepId, data.suggestion);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSuggesting(false);
+        }
+    };
+
+    const updateStepContent = (id: string, content: string) => {
+        setSteps(prev => prev.map(s => s.id === id ? { ...s, content } : s));
+        const group = fabricCanvas.current?.getObjects().find((o: any) => o.id === id) as fabric.Group;
+        if (group) {
+            const textObj = group.getObjects().find(o => o.type === "i-text") as fabric.IText;
+            if (textObj) {
+                textObj.set("text", content);
+                fabricCanvas.current?.renderAll();
+            }
+        }
+        saveFlow();
+    };
+
+    const updateStepTheme = (id: string, theme: string) => {
+        setSteps(prev => prev.map(s => s.id === id ? { ...s, theme } : s));
+        const group = fabricCanvas.current?.getObjects().find((o: any) => o.id === id) as fabric.Group;
+        if (group) {
+            const rect = group.getObjects().find(o => o.type === "rect") as fabric.Rect;
+            const text = group.getObjects().find(o => o.type === "i-text") as fabric.IText;
+
+            if (rect && text) {
+                switch (theme) {
+                    case "minimal":
+                        rect.set({ fill: "white", stroke: "#D6E0DA", strokeWidth: 1 });
+                        text.set({ fill: "#16201C" });
+                        break;
+                    case "bold":
+                        rect.set({ fill: "#0E7C66", stroke: "transparent" });
+                        text.set({ fill: "#FFFFFF" });
+                        break;
+                    case "dark":
+                        rect.set({ fill: "#16201C", stroke: "transparent" });
+                        text.set({ fill: "#FFFFFF" });
+                        break;
+                    case "glass":
+                        rect.set({ fill: "rgba(255,255,255,0.8)", stroke: "rgba(14,124,102,0.2)", strokeWidth: 1 });
+                        text.set({ fill: "#16201C" });
+                        break;
+                }
+                fabricCanvas.current?.renderAll();
+            }
+        }
         saveFlow();
     };
 
@@ -233,35 +308,66 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-mute uppercase tracking-wider mb-2">Tooltip Content</label>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-xs font-bold text-gray-mute uppercase tracking-wider">Tooltip Content</label>
+                                        <button
+                                            onClick={() => handleSuggestCopy(selectedStep.id)}
+                                            disabled={suggesting}
+                                            className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 hover:text-emerald-800 transition-colors disabled:opacity-50"
+                                        >
+                                            <Sparkles className={cn("w-3 h-3", suggesting && "animate-spin")} />
+                                            {suggesting ? "Generating..." : "Suggest Copy"}
+                                        </button>
+                                    </div>
                                     <textarea
                                         value={selectedStep.content}
-                                        onChange={(e) => {
-                                            const newContent = e.target.value;
-                                            setSteps(prev => prev.map(s => s.id === selectedStep.id ? { ...s, content: newContent } : s));
-                                            const group = fabricCanvas.current?.getObjects().find((o: any) => o.id === selectedStep.id) as fabric.Group;
-                                            if (group) {
-                                                const textObj = group.getObjects().find(o => o.type === "i-text") as fabric.IText;
-                                                if (textObj) textObj.set("text", newContent);
-                                                fabricCanvas.current?.renderAll();
-                                            }
-                                            saveFlow();
-                                        }}
-                                        className="w-full h-32 p-3 bg-surface-muted border border-border-subtle rounded-xl text-sm text-ink outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all resize-none"
+                                        onChange={(e) => updateStepContent(selectedStep.id, e.target.value)}
+                                        className="w-full h-24 p-3 bg-surface-muted border border-border-subtle rounded-xl text-sm text-ink outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all resize-none"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-mute uppercase tracking-wider mb-2">Anchor Element</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="#element-id or .class"
-                                            className="flex-1 h-10 px-3 bg-surface-muted border border-border-subtle rounded-xl text-sm text-ink outline-none font-mono"
-                                        />
-                                        <button className="h-10 w-10 flex items-center justify-center bg-surface-muted border border-border-subtle rounded-xl text-ink hover:text-emerald-600 hover:border-emerald-600 transition-all">
-                                            <MousePointer className="w-4 h-4" />
-                                        </button>
+                                    <label className="block text-xs font-bold text-gray-mute uppercase tracking-wider mb-3">Visual Theme</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {["minimal", "bold", "dark", "glass"].map((t) => (
+                                            <button
+                                                key={t}
+                                                onClick={() => updateStepTheme(selectedStep.id, t)}
+                                                className={cn(
+                                                    "h-12 rounded-xl border flex items-center justify-center text-xs font-semibold capitalize transition-all",
+                                                    selectedStep.theme === t
+                                                        ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                                        : "border-border-subtle bg-surface-muted text-gray-mute hover:border-gray-mute"
+                                                )}
+                                            >
+                                                <Palette className="w-3 h-3 mr-1.5 opacity-50" />
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-mute uppercase tracking-wider mb-2">Advance Trigger</label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border-subtle rounded-xl group cursor-pointer hover:border-emerald-600 transition-all">
+                                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-ink shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-600">
+                                                <Zap className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="text-xs font-bold text-ink mb-0.5">Click element</div>
+                                                <div className="text-[10px] text-gray-mute">Advances when target is clicked</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 p-3 bg-surface-muted border border-border-subtle rounded-xl group cursor-pointer hover:border-emerald-600 transition-all">
+                                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-ink shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-600">
+                                                <Clock className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="text-xs font-bold text-ink mb-0.5">Auto-advance</div>
+                                                <div className="text-[10px] text-gray-mute">Wait for 3 seconds</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
