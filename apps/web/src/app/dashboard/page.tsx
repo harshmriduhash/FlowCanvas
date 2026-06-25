@@ -3,6 +3,7 @@ import { Plus, MousePointer2, TrendingUp, CheckCircle2, Clock } from "lucide-rea
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SnippetStatusBanner } from "@/components/dashboard/snippet-status-banner";
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
@@ -15,6 +16,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <DashboardLayout>
+                <SnippetStatusBanner />
                 <div className="p-8 max-w-7xl mx-auto space-y-8">
                     <div className="flex justify-between items-end">
                         <div className="space-y-2">

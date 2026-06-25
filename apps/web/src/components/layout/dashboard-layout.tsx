@@ -14,6 +14,7 @@ import {
     Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CommandPalette } from "./command-palette";
 
 const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -29,6 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="flex h-screen bg-surface-muted overflow-hidden">
+            <CommandPalette />
             {/* Sidebar */}
             <aside
                 className={cn(
