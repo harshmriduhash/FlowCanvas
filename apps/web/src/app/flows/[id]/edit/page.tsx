@@ -14,7 +14,9 @@ import {
     Layers,
     Clock,
     Zap,
-    BarChart3
+    BarChart3,
+    Plus,
+    Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
