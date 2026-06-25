@@ -1,8 +1,39 @@
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Plus, MousePointer2, TrendingUp, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setLoading(false), 800);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="p-8 max-w-7xl mx-auto space-y-8">
+                    <div className="flex justify-between items-end">
+                        <div className="space-y-2">
+                            <Skeleton className="h-10 w-48" />
+                            <Skeleton className="h-4 w-64" />
+                        </div>
+                        <Skeleton className="h-11 w-32 rounded-xl" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-[200px] rounded-2xl" />)}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+                    </div>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
     return (
         <DashboardLayout>
             <div className="p-8 max-w-7xl mx-auto">
@@ -24,7 +55,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                     {/* Create New Card */}
                     <Link
-                        href="/flows/new"
+                        href="/onboarding/project"
                         className="h-[200px] border-2 border-dashed border-border-subtle rounded-2xl flex flex-col items-center justify-center gap-3 text-gray-mute hover:border-emerald-600 hover:text-emerald-600 transition-all group"
                     >
                         <div className="w-12 h-12 bg-surface-muted rounded-full flex items-center justify-center group-hover:bg-emerald-50 transition-colors">
