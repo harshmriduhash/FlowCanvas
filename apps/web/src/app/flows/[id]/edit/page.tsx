@@ -1,0 +1,279 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import {
+    ChevronLeft,
+    Play,
+    Send,
+    MousePointer,
+    PlusSquare,
+    AlertCircle,
+    HelpCircle
+} from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import * as fabric from "fabric";
+
+export default function FlowEditorPage({ params }: { params: { id: string } }) {
+    const [saving, setSaving] = useState(false);
+    const [isPublished, setIsPublished] = useState(false);
+    const [selectedTool, setSelectedTool] = useState("select");
+    const [activeStepId, setActiveStepId] = useState<string | null>(null);
+    const [steps, setSteps] = useState<any[]>([]);
+
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fabricCanvas = useRef<fabric.Canvas | null>(null);
+
+    const saveFlow = () => {
+        setSaving(true);
+        setTimeout(() => setSaving(false), 800);
+    };
+
+    useEffect(() => {
+        if (canvasRef.current && !fabricCanvas.current) {
+            fabricCanvas.current = new fabric.Canvas(canvasRef.current, {
+                width: 1200,
+                height: 800,
+            });
+
+            fabricCanvas.current.on("selection:created", (e: any) => {
+                const selected = e.selected?.[0];
+                if (selected) setActiveStepId((selected as any).id);
+            });
+
+            fabricCanvas.current.on("selection:cleared", () => {
+                setActiveStepId(null);
+            });
+
+            fabricCanvas.current.on("object:modified", saveFlow);
+        }
+
+        return () => {
+            fabricCanvas.current?.dispose();
+            fabricCanvas.current = null;
+        };
+    }, []);
+
+    const addTooltip = () => {
+        if (!fabricCanvas.current) return;
+
+        const id = Math.random().toString(36).substr(2, 9);
+        const tooltip = new fabric.Rect({
+            left: 100,
+            top: 100,
+            width: 200,
+            height: 100,
+            fill: "white",
+            stroke: "#0E7C66",
+            strokeWidth: 2,
+            rx: 12,
+            ry: 12,
+            shadow: new fabric.Shadow({
+                color: "rgba(0,0,0,0.1)",
+                blur: 10,
+                offsetX: 0,
+                offsetY: 4
+            })
+        });
+
+        const text = new fabric.IText("Click here to start", {
+            fontSize: 14,
+            left: 115,
+            top: 115,
+            fontFamily: "Inter",
+            fill: "#16201C"
+        });
+
+        const group = new fabric.Group([tooltip, text], {
+            left: 400,
+            top: 300,
+        });
+
+        (group as any).id = id;
+        (group as any).type = "tooltip";
+
+        fabricCanvas.current.add(group);
+        fabricCanvas.current.setActiveObject(group);
+        setSteps(prev => [...prev, { id, type: "tooltip", content: "Click here to start" }]);
+        setActiveStepId(id);
+        saveFlow();
+    };
+
+    const selectedStep = steps.find(s => s.id === activeStepId);
+
+    return (
+        <div className="h-screen flex flex-col bg-surface-muted overflow-hidden">
+            {/* Top Toolbar */}
+            <header className="h-14 bg-surface border-b border-border-subtle flex items-center justify-between px-4 z-10">
+                <div className="flex items-center gap-4">
+                    <Link href="/dashboard" className="text-gray-mute hover:text-ink transition-colors">
+                        <ChevronLeft className="w-5 h-5" />
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <h1 className="font-semibold text-ink">New User Onboarding</h1>
+                        <span className={cn(
+                            "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full tracking-wider",
+                            saving ? "text-amber-500 animate-pulse" : "text-gray-mute"
+                        )}>
+                            {saving ? "Saving..." : "Saved"}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button className="h-9 px-4 rounded-xl border border-border-subtle text-sm font-medium text-ink hover:bg-surface-muted flex items-center gap-2">
+                        <Play className="w-4 h-4" />
+                        Preview
+                    </button>
+                    <button
+                        onClick={() => setIsPublished(!isPublished)}
+                        className={cn(
+                            "h-9 px-4 rounded-xl text-sm font-medium flex items-center gap-2 transition-all",
+                            isPublished
+                                ? "bg-emerald-50 text-emerald-600 border border-emerald-600/20"
+                                : "bg-emerald-600 text-white hover:bg-emerald-800 shadow-sm"
+                        )}
+                    >
+                        <Send className="w-4 h-4" />
+                        {isPublished ? "Published" : "Publish"}
+                    </button>
+                </div>
+            </header>
+
+            <div className="flex-1 flex overflow-hidden">
+                {/* Left Tool Rail */}
+                <aside className="w-16 bg-surface border-r border-border-subtle flex flex-col items-center py-4 gap-4 z-10">
+                    <button
+                        onClick={() => setSelectedTool("select")}
+                        className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                            selectedTool === "select" ? "bg-emerald-600 text-white" : "text-gray-mute hover:bg-surface-muted hover:text-ink"
+                        )}
+                    >
+                        <MousePointer className="w-5 h-5" />
+                    </button>
+                    <div className="w-8 h-px bg-border-subtle mx-auto my-2" />
+                    <button
+                        onClick={addTooltip}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-surface-muted hover:text-ink transition-all group relative"
+                    >
+                        <PlusSquare className="w-5 h-5" />
+                        <span className="absolute left-14 bg-ink text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            Add Tooltip
+                        </span>
+                    </button>
+                    <button className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-surface-muted hover:text-ink transition-all group relative">
+                        <AlertCircle className="w-5 h-5" />
+                        <span className="absolute left-14 bg-ink text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            Add Modal
+                        </span>
+                    </button>
+                    <button className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-surface-muted hover:text-ink transition-all group relative">
+                        <HelpCircle className="w-5 h-5" />
+                        <span className="absolute left-14 bg-ink text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            Add Hotspot
+                        </span>
+                    </button>
+                </aside>
+
+                {/* Workspace */}
+                <div className="flex-1 bg-surface-muted relative overflow-hidden flex flex-col">
+                    <div className="flex-1 relative flex items-center justify-center p-20 overflow-auto">
+                        <div className="relative shadow-2xl rounded-lg border border-border-subtle bg-white overflow-hidden shrink-0" style={{ width: 1200, height: 800 }}>
+                            <div className="absolute inset-0 pointer-events-none opacity-50 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200&h=800')] bg-cover bg-center" />
+                            <canvas ref={canvasRef} />
+                        </div>
+                    </div>
+
+                    {/* Bottom Sequencer */}
+                    <div className="h-28 bg-surface border-t border-border-subtle flex items-center px-6 gap-4 overflow-x-auto">
+                        {steps.map((step, i) => (
+                            <div
+                                key={step.id}
+                                onClick={() => {
+                                    const obj = fabricCanvas.current?.getObjects().find((o: any) => o.id === step.id);
+                                    if (obj) {
+                                        fabricCanvas.current?.setActiveObject(obj);
+                                        fabricCanvas.current?.renderAll();
+                                    }
+                                    setActiveStepId(step.id);
+                                }}
+                                className={cn(
+                                    "w-32 h-20 rounded-lg border flex flex-col items-center justify-center flex-shrink-0 cursor-pointer transition-all",
+                                    step.id === activeStepId ? "border-emerald-600 bg-emerald-50" : "border-border-subtle bg-surface-muted hover:border-gray-mute"
+                                )}
+                            >
+                                <span className="text-[10px] font-bold text-gray-mute uppercase mb-1">Step {i + 1}</span>
+                                <span className="text-xs font-medium text-ink">{step.type}</span>
+                            </div>
+                        ))}
+                        <button
+                            onClick={addTooltip}
+                            className="w-32 h-20 rounded-lg border-2 border-dashed border-border-subtle flex flex-col items-center justify-center flex-shrink-0 text-gray-mute hover:border-emerald-600 hover:text-emerald-600 transition-all"
+                        >
+                            <PlusSquare className="w-5 h-5 mb-1" />
+                            <span className="text-xs font-medium">Add step</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right Property Panel */}
+                <aside className="w-80 bg-surface border-l border-border-subtle flex flex-col z-10 font-sans">
+                    <div className="h-14 flex items-center px-4 border-b border-border-subtle">
+                        <h2 className="font-semibold text-ink">Step Properties</h2>
+                    </div>
+                    <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                        {selectedStep ? (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-200">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-mute uppercase tracking-wider mb-2">Step Type</label>
+                                    <div className="h-10 px-3 flex items-center bg-surface-muted border border-border-subtle rounded-xl text-sm text-ink capitalize font-medium">
+                                        {selectedStep.type}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-mute uppercase tracking-wider mb-2">Tooltip Content</label>
+                                    <textarea
+                                        value={selectedStep.content}
+                                        onChange={(e) => {
+                                            const newContent = e.target.value;
+                                            setSteps(prev => prev.map(s => s.id === selectedStep.id ? { ...s, content: newContent } : s));
+                                            const group = fabricCanvas.current?.getObjects().find((o: any) => o.id === selectedStep.id) as fabric.Group;
+                                            if (group) {
+                                                const textObj = group.getObjects().find(o => o.type === "i-text") as fabric.IText;
+                                                if (textObj) textObj.set("text", newContent);
+                                                fabricCanvas.current?.renderAll();
+                                            }
+                                            saveFlow();
+                                        }}
+                                        className="w-full h-32 p-3 bg-surface-muted border border-border-subtle rounded-xl text-sm text-ink outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all resize-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-mute uppercase tracking-wider mb-2">Anchor Element</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="#element-id or .class"
+                                            className="flex-1 h-10 px-3 bg-surface-muted border border-border-subtle rounded-xl text-sm text-ink outline-none font-mono"
+                                        />
+                                        <button className="h-10 w-10 flex items-center justify-center bg-surface-muted border border-border-subtle rounded-xl text-ink hover:text-emerald-600 hover:border-emerald-600 transition-all">
+                                            <MousePointer className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-20">
+                                <MousePointer className="w-12 h-12 text-gray-mute mx-auto mb-4 opacity-20" />
+                                <p className="text-sm text-gray-mute font-medium px-6 leading-relaxed">Select an element on the canvas to edit its properties.</p>
+                            </div>
+                        )}
+                    </div>
+                </aside>
+            </div>
+        </div>
+    );
+}

@@ -1,0 +1,268 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String    @unique
+  name           String?
+  avatarUrl      String?
+  emailVerified  Boolean   @default(false)
+  authProvider   String    // 'google' | 'email_otp'
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  memberships    Membership[]
+  createdProjects Project[] @relation("ProjectCreator")
+  sessions       Session[]
+  auditLogs      AuditLog[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model OtpCode {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String
+  codeHash     String
+  attempts     Int       @default(0)
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([email, createdAt(sort: Desc)])
+  @@map("otp_codes")
+}
+
+model Session {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @db.Uuid
+  refreshTokenHash  String    @unique
+  userAgent         String?
+  ipAddress         String?
+  createdAt         DateTime  @default(now())
+  lastUsedAt        DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Project {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  slug          String    @unique
+  appUrl        String
+  projectKey    String    @unique // public, non-secret
+  createdBy     String    @db.Uuid
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  creator       User      @relation("ProjectCreator", fields: [createdBy], references: [id])
+  memberships   Membership[]
+  invitations   Invitation[]
+  themes        Theme[]
+  flows         Flow[]
+  abTests       AbTest[]
+  subscription  Subscription?
+  auditLogs     AuditLog[]
+
+  @@index([slug])
+  @@map("projects")
+}
+
+model Membership {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @db.Uuid
+  projectId     String    @db.Uuid
+  role          String    // 'owner' | 'admin' | 'editor' | 'member'
+  invitedBy     String?   @db.Uuid
+  joinedAt      DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model Invitation {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId     String    @db.Uuid
+  email         String
+  role          String    // 'admin' | 'editor' | 'member'
+  invitedBy     String    @db.Uuid
+  tokenHash     String    @unique
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("invitations")
+}
+
+model Theme {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId     String    @db.Uuid
+  name          String
+  isBuiltin     Boolean   @default(false)
+  config        Json      @default("{}") // colors, fonts, radius, blur
+  createdBy     String?   @db.Uuid
+  createdAt     DateTime  @default(now())
+
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("themes")
+}
+
+model Flow {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId       String    @db.Uuid
+  name            String
+  status          String    @default("draft") // 'draft' | 'published' | 'archived'
+  targetingRules  Json      @default("{}")
+  thumbnailKey    String?
+  createdBy       String    @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  publishedAt     DateTime?
+
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  steps           FlowStep[]
+  sessions        FlowSession[]
+
+  @@index([projectId, status])
+  @@map("flows")
+}
+
+model FlowStep {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  flowId          String    @db.Uuid
+  stepOrder       Int
+  stepType        String    // 'tooltip' | 'modal' | 'hotspot' | 'nps'
+  content         Json      @default("{}")
+  branchConditions Json     @default("[]")
+
+  flow            Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  events          StepEvent[]
+
+  @@unique([flowId, stepOrder])
+  @@index([flowId, stepOrder])
+  @@map("flow_steps")
+}
+
+model AbTest {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId       String    @db.Uuid
+  name            String
+  variantAFlowId  String    @db.Uuid
+  variantBFlowId  String    @db.Uuid
+  trafficSplitPct Int       @default(50)
+  status          String    @default("running") // 'running' | 'paused' | 'concluded'
+  createdAt       DateTime  @default(now())
+
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("ab_tests")
+}
+
+model FlowSession {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  flowId              String    @db.Uuid
+  abTestVariant       String?   // 'a' | 'b'
+  anonymousVisitorId  String
+  identifiedUserProps Json?
+  userAgent           String?
+  startedAt           DateTime  @default(now())
+  completedAt         DateTime?
+
+  flow                Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  events              StepEvent[]
+
+  @@index([flowId, startedAt(sort: Desc)])
+  @@map("flow_sessions")
+}
+
+model StepEvent {
+  id              BigInt    @id @default(autoincrement())
+  flowSessionId   String    @db.Uuid
+  flowStepId      String    @db.Uuid
+  eventType       String    // 'viewed' | 'completed' | 'skipped' | 'dismissed'
+  occurredAt      DateTime  @default(now())
+
+  session         FlowSession @relation(fields: [flowSessionId], references: [id], onDelete: Cascade)
+  step            FlowStep    @relation(fields: [flowStepId], references: [id])
+
+  @@index([flowSessionId])
+  @@index([flowStepId, occurredAt(sort: Desc)])
+  @@map("step_events")
+}
+
+model Subscription {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId             String    @unique @db.Uuid
+  plan                  String    @default("free") // 'free' | 'starter' | 'growth' | 'enterprise'
+  status                String    @default("active") // 'active' | 'past_due' | 'canceled'
+  provider              String    @default("mock") // 'mock' | 'stripe' | 'razorpay'
+  providerSubscriptionId String?
+  cardBrand             String?
+  cardLast4             String?
+  currentPeriodEnd      DateTime?
+  monthlySessionsUsed   Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  project               Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoices              Invoice[]
+
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subscriptionId  String    @db.Uuid
+  amountCents     Int
+  currency        String    @default("inr")
+  status          String    // 'paid' | 'open' | 'void'
+  pdfUrl          String?
+  issuedAt        DateTime  @default(now())
+
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+model AuditLog {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId     String?   @db.Uuid
+  actorId       String?   @db.Uuid
+  action        String    // e.g. 'flow.published'
+  metadata      Json      @default("{}")
+  ipAddress     String?
+  createdAt     DateTime  @default(now())
+
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor         User?     @relation(fields: [actorId], references: [id])
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
