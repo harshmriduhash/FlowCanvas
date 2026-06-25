@@ -34,3 +34,11 @@ yarn-error.log*
 
 # Bundles
 apps/web/public/loader.js
+
+# Local SQLite dev database (never commit)
+*.db
+*.db-journal
+
+# Prisma generated client (auto-generated on deploy)
+node_modules/.prisma/
+packages/db/node_modules/
