@@ -1,87 +1,72 @@
 "use client";
 
-import { TrendingDown, Users, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useMemo } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { TrendingDown, Lightbulb } from "lucide-react";
 
-interface FunnelStep {
-    name: string;
-    views: number;
-    dropoff: number;
-}
-
-const mockData: FunnelStep[] = [
-    { name: "Step 1: Welcome", views: 4200, dropoff: 0 },
-    { name: "Step 2: Profile Setup", views: 3100, dropoff: 26 },
-    { name: "Step 3: Feature Tour", views: 2400, dropoff: 22 },
-    { name: "Step 4: Completion", views: 2150, dropoff: 10 },
+const MOCK_DATA = [
+    { name: "Triggered", value: 4200, color: "#16201C" },
+    { name: "Step 1", value: 3800, color: "#0E7C66" },
+    { name: "Step 2", value: 2900, color: "#22C55E" },
+    { name: "Step 3", value: 2400, color: "#4ADE80" },
+    { name: "Completed", value: 2100, color: "#86EFAC" },
 ];
 
 export default function FunnelAnalyticsView() {
-    const maxViews = Math.max(...mockData.map(s => s.views));
+    const chartData = useMemo(() => MOCK_DATA, []);
 
     return (
-        <div className="bg-surface border border-border-subtle rounded-2xl p-8 shadow-premium">
-            <div className="flex items-center justify-between mb-10">
+        <div className="bg-surface border border-border-subtle rounded-[32px] p-10 shadow-premium">
+            <div className="mb-10 flex items-start justify-between">
                 <div>
-                    <h2 className="text-xl font-display font-semibold text-ink">Onboarding Funnel</h2>
-                    <p className="text-sm text-gray-mute">Identify exactly where users are getting stuck.</p>
+                    <h2 className="text-xl font-bold text-ink mb-1">Conversion Funnel</h2>
+                    <p className="text-sm text-gray-mute">Track user drop-off at every stage of the onboarding journey.</p>
                 </div>
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-emerald-600 rounded-sm" />
-                        <span className="text-sm text-ink font-medium">Views</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-100 rounded-sm" />
-                        <span className="text-sm text-gray-mute font-medium">Drop-off</span>
+                <div className="flex gap-8">
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-bold text-gray-mute uppercase tracking-widest mb-1">Conversion Rate</span>
+                        <span className="text-2xl font-black text-emerald-600">50.0%</span>
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-8">
-                {mockData.map((step, i) => (
-                    <div key={i} className="relative">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-ink">{step.name}</span>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5 text-gray-mute text-sm">
-                                    <Users className="w-4 h-4" />
-                                    {step.views.toLocaleString()}
-                                </div>
-                                {step.dropoff > 0 && (
-                                    <div className="flex items-center gap-1 text-red-500 text-sm font-bold bg-red-50 px-2 py-0.5 rounded-full">
-                                        <TrendingDown className="w-3 h-3" />
-                                        {step.dropoff}%
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="h-4 bg-surface-muted rounded-full overflow-hidden flex">
-                            <div
-                                className="h-full bg-emerald-600 rounded-full transition-all duration-1000"
-                                style={{ width: `${(step.views / maxViews) * 100}%` }}
-                            />
-                        </div>
-
-                        {i < mockData.length - 1 && (
-                            <div className="absolute -bottom-6 left-12 flex flex-col items-center opacity-30">
-                                <div className="w-px h-4 bg-border-subtle" />
-                                <ChevronRight className="w-3 h-3 rotate-90 text-gray-mute" />
-                            </div>
-                        )}
-                    </div>
-                ))}
+            <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.03)" />
+                        <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 10, fontWeight: 700, fill: "#94A3B8" }}
+                            dy={10}
+                        />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 10, fontWeight: 700, fill: "#94A3B8" }}
+                        />
+                        <Tooltip
+                            cursor={{ fill: 'rgba(14, 124, 102, 0.03)' }}
+                            contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', fontSize: '12px', padding: '16px' }}
+                        />
+                        <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={50}>
+                            {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
             </div>
 
-            <div className="mt-12 p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-4">
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm">
-                    <span className="text-xl">💡</span>
+            <div className="mt-12 p-8 bg-emerald-50 rounded-[40px] border border-emerald-100 flex items-start gap-6">
+                <div className="w-12 h-12 bg-white rounded-3xl flex items-center justify-center shrink-0 shadow-sm border border-emerald-600/10">
+                    <Lightbulb className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                    <h4 className="text-sm font-bold text-emerald-800">AI Recommendation</h4>
-                    <p className="text-sm text-emerald-700 mt-1 leading-relaxed">
-                        Drop-off at <span className="font-bold">Step 2</span> is 15% higher than industry average. Try reducing the number of input fields or adding a "Skip" option.
+                    <h4 className="text-lg font-bold text-emerald-900 mb-1">AI Growth Insight</h4>
+                    <p className="text-sm text-emerald-700/80 leading-relaxed">
+                        Users on <span className="font-bold">Step 2</span> are dropping off 15% more frequently than similar projects. This often indicates a friction point in form completion. Consider moving this step further down the flow.
                     </p>
                 </div>
             </div>

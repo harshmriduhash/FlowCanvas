@@ -19,7 +19,8 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import * as fabric from "fabric";
-import { toast } from "sonner";
+import { Toaster, toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function FlowEditorPage({ params }: { params: { id: string } }) {
     const [saving, setSaving] = useState(false);
@@ -245,7 +246,7 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
                     </button>
                     <div className="w-8 h-px bg-border-subtle mx-auto my-2" />
                     <button
-                        onClick={addTooltip}
+                        onClick={() => addStep("tooltip")}
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-surface-muted hover:text-ink transition-all group relative"
                     >
                         <PlusSquare className="w-5 h-5" />
