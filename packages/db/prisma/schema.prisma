@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String    @id @default(cuid())
   email          String    @unique
   name           String?
   avatarUrl      String?
@@ -31,7 +31,7 @@ model User {
 }
 
 model OtpCode {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String    @id @default(cuid())
   email        String
   codeHash     String
   attempts     Int       @default(0)
@@ -39,13 +39,13 @@ model OtpCode {
   consumedAt   DateTime?
   createdAt    DateTime  @default(now())
 
-  @@index([email, createdAt(sort: Desc)])
+  @@index([email, createdAt])
   @@map("otp_codes")
 }
 
 model Session {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String    @db.Uuid
+  id                String    @id @default(cuid())
+  userId            String
   refreshTokenHash  String    @unique
   userAgent         String?
   ipAddress         String?
@@ -61,12 +61,12 @@ model Session {
 }
 
 model Project {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String    @id @default(cuid())
   name          String
   slug          String    @unique
   appUrl        String
   projectKey    String    @unique // public, non-secret
-  createdBy     String    @db.Uuid
+  createdBy     String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -85,11 +85,11 @@ model Project {
 }
 
 model Membership {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String    @db.Uuid
-  projectId     String    @db.Uuid
+  id            String    @id @default(cuid())
+  userId        String
+  projectId     String
   role          String    // 'owner' | 'admin' | 'editor' | 'member'
-  invitedBy     String?   @db.Uuid
+  invitedBy     String?
   joinedAt      DateTime  @default(now())
 
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -102,11 +102,11 @@ model Membership {
 }
 
 model Invitation {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId     String    @db.Uuid
+  id            String    @id @default(cuid())
+  projectId     String
   email         String
   role          String    // 'admin' | 'editor' | 'member'
-  invitedBy     String    @db.Uuid
+  invitedBy     String
   tokenHash     String    @unique
   expiresAt     DateTime
   acceptedAt    DateTime?
@@ -119,12 +119,12 @@ model Invitation {
 }
 
 model Theme {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId     String    @db.Uuid
+  id            String    @id @default(cuid())
+  projectId     String
   name          String
   isBuiltin     Boolean   @default(false)
-  config        Json      @default("{}") // colors, fonts, radius, blur
-  createdBy     String?   @db.Uuid
+  config        String    @default("{}") // SQLite uses string for JSON
+  createdBy     String?
   createdAt     DateTime  @default(now())
 
   project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -134,13 +134,13 @@ model Theme {
 }
 
 model Flow {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId       String    @db.Uuid
+  id              String    @id @default(cuid())
+  projectId       String
   name            String
   status          String    @default("draft") // 'draft' | 'published' | 'archived'
-  targetingRules  Json      @default("{}")
+  targetingRules  String    @default("{}")
   thumbnailKey    String?
-  createdBy       String    @db.Uuid
+  createdBy       String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   publishedAt     DateTime?
@@ -154,12 +154,12 @@ model Flow {
 }
 
 model FlowStep {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  flowId          String    @db.Uuid
+  id              String    @id @default(cuid())
+  flowId          String
   stepOrder       Int
   stepType        String    // 'tooltip' | 'modal' | 'hotspot' | 'nps'
-  content         Json      @default("{}")
-  branchConditions Json     @default("[]")
+  content         String    @default("{}")
+  branchConditions String   @default("[]")
 
   flow            Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
   events          StepEvent[]
@@ -170,11 +170,11 @@ model FlowStep {
 }
 
 model AbTest {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId       String    @db.Uuid
+  id              String    @id @default(cuid())
+  projectId       String
   name            String
-  variantAFlowId  String    @db.Uuid
-  variantBFlowId  String    @db.Uuid
+  variantAFlowId  String
+  variantBFlowId  String
   trafficSplitPct Int       @default(50)
   status          String    @default("running") // 'running' | 'paused' | 'concluded'
   createdAt       DateTime  @default(now())
@@ -186,11 +186,11 @@ model AbTest {
 }
 
 model FlowSession {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  flowId              String    @db.Uuid
+  id                  String    @id @default(cuid())
+  flowId              String
   abTestVariant       String?   // 'a' | 'b'
   anonymousVisitorId  String
-  identifiedUserProps Json?
+  identifiedUserProps String?
   userAgent           String?
   startedAt           DateTime  @default(now())
   completedAt         DateTime?
@@ -198,14 +198,14 @@ model FlowSession {
   flow                Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
   events              StepEvent[]
 
-  @@index([flowId, startedAt(sort: Desc)])
+  @@index([flowId, startedAt])
   @@map("flow_sessions")
 }
 
 model StepEvent {
-  id              BigInt    @id @default(autoincrement())
-  flowSessionId   String    @db.Uuid
-  flowStepId      String    @db.Uuid
+  id              Int       @id @default(autoincrement())
+  flowSessionId   String
+  flowStepId      String
   eventType       String    // 'viewed' | 'completed' | 'skipped' | 'dismissed'
   occurredAt      DateTime  @default(now())
 
@@ -213,13 +213,13 @@ model StepEvent {
   step            FlowStep    @relation(fields: [flowStepId], references: [id])
 
   @@index([flowSessionId])
-  @@index([flowStepId, occurredAt(sort: Desc)])
+  @@index([flowStepId, occurredAt])
   @@map("step_events")
 }
 
 model Subscription {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId             String    @unique @db.Uuid
+  id                    String    @id @default(cuid())
+  projectId             String    @unique
   plan                  String    @default("free") // 'free' | 'starter' | 'growth' | 'enterprise'
   status                String    @default("active") // 'active' | 'past_due' | 'canceled'
   provider              String    @default("mock") // 'mock' | 'stripe' | 'razorpay'
@@ -238,8 +238,8 @@ model Subscription {
 }
 
 model Invoice {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  subscriptionId  String    @db.Uuid
+  id              String    @id @default(cuid())
+  subscriptionId  String
   amountCents     Int
   currency        String    @default("inr")
   status          String    // 'paid' | 'open' | 'void'
@@ -252,17 +252,17 @@ model Invoice {
 }
 
 model AuditLog {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId     String?   @db.Uuid
-  actorId       String?   @db.Uuid
+  id            String    @id @default(cuid())
+  projectId     String?
+  actorId       String?
   action        String    // e.g. 'flow.published'
-  metadata      Json      @default("{}")
+  metadata      String    @default("{}")
   ipAddress     String?
   createdAt     DateTime  @default(now())
 
   project       Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   actor         User?     @relation(fields: [actorId], references: [id])
 
-  @@index([projectId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt])
   @@map("audit_logs")
 }

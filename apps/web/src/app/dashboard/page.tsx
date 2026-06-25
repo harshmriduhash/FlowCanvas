@@ -1,3 +1,5 @@
+"use client";
+
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Plus, MousePointer2, TrendingUp, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
