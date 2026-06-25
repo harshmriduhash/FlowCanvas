@@ -12,7 +12,7 @@ const MOCK_DATA = [
     { name: "Completed", value: 2100, color: "#86EFAC" },
 ];
 
-export default function FunnelAnalyticsView() {
+export function FunnelView() {
     const chartData = useMemo(() => MOCK_DATA, []);
 
     return (
