@@ -133,6 +133,36 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                        {/* Existing line chart area */}
+                    </div>
+                    <div>
+                        {/* Top Performing Flow Card (PRD 8.2) */}
+                        <div className="bg-emerald-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group">
+                            <div className="relative z-10">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Top Performing</span>
+                                <h3 className="text-xl font-bold mt-2 mb-4">Onboarding Tour</h3>
+                                <div className="flex items-end justify-between">
+                                    <div>
+                                        <div className="text-3xl font-black text-white">68.2%</div>
+                                        <div className="text-xs text-emerald-300">Completion rate</div>
+                                    </div>
+                                    <Link
+                                        href="/flows/123/analytics"
+                                        className="h-10 px-4 bg-white/10 backdrop-blur-md rounded-xl flex items-center gap-2 hover:bg-white/20 transition-all text-sm font-bold"
+                                    >
+                                        Insights
+                                    </Link>
+                                </div>
+                            </div>
+                            <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12 transition-transform group-hover:scale-110">
+                                <TrendingUp className="w-32 h-32" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </DashboardLayout>
     );
