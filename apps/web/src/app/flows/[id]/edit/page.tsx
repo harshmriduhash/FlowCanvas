@@ -249,6 +249,15 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
                             Add Hotspot
                         </span>
                     </button>
+
+                    <div className="mt-auto pt-4 border-t border-border-subtle w-full flex flex-col items-center gap-4">
+                        <button
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-mute hover:bg-emerald-50 hover:text-emerald-600 transition-all group relative"
+                            title="Keyboard Accessible Add (A)"
+                        >
+                            <Layers className="w-5 h-5" />
+                        </button>
+                    </div>
                 </aside>
 
                 {/* Workspace */}
