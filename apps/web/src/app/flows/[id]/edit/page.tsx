@@ -215,17 +215,31 @@ export default function FlowEditorPage({ params }: { params: { id: string } }) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="h-9 px-4 rounded-xl border border-border-subtle text-sm font-medium text-ink hover:bg-surface-muted flex items-center gap-2">
+                    <button
+                        onClick={() => {
+                            const testUrl = `http://localhost:3000?fc_test_flow_id=${params.id}`;
+                            window.open(testUrl, '_blank');
+                            toast.success("Opening test page with forced flow bypass");
+                        }}
+                        className="h-9 px-4 rounded-xl border border-emerald-600/20 bg-emerald-50 text-emerald-700 text-sm font-bold hover:bg-emerald-100 transition-all flex items-center gap-2"
+                    >
                         <Play className="w-4 h-4" />
+                        Test Flow
+                    </button>
+                    <button className="h-9 px-4 rounded-xl border border-border-subtle text-sm font-medium text-ink hover:bg-surface-muted flex items-center gap-2">
+                        <MousePointer className="w-4 h-4 text-gray-mute" />
                         Preview
                     </button>
                     <button
-                        onClick={() => setIsPublished(!isPublished)}
+                        onClick={() => {
+                            setIsPublished(!isPublished);
+                            toast.success(isPublished ? "Flow unpublished" : "Flow published live");
+                        }}
                         className={cn(
-                            "h-9 px-4 rounded-xl text-sm font-medium flex items-center gap-2 transition-all",
+                            "h-9 px-4 rounded-xl text-sm font-black flex items-center gap-2 transition-all",
                             isPublished
-                                ? "bg-emerald-50 text-emerald-600 border border-emerald-600/20"
-                                : "bg-emerald-600 text-white hover:bg-emerald-800 shadow-sm"
+                                ? "bg-white text-emerald-600 border border-emerald-600/20 shadow-sm"
+                                : "bg-emerald-600 text-white hover:bg-emerald-800 shadow-lg shadow-emerald-600/10"
                         )}
                     >
                         <Send className="w-4 h-4" />
