@@ -95,7 +95,7 @@ export default function BranchingEditorPage({ params }: { params: { id: string }
         });
 
         fabricCanvas.current?.add(line);
-        line.sendObjectToBack();
+        fabricCanvas.current?.sendObjectToBack(line);
 
         if (label) {
             const tag = new fabric.Rect({
