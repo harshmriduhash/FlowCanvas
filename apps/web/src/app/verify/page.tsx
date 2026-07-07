@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export default function VerifyPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-surface-muted"><div className="animate-spin w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full" /></div>}>
+            <VerifyContent />
+        </Suspense>
+    );
+}
+
+function VerifyContent() {
     const searchParams = useSearchParams();
     const email = searchParams.get("email") || "";
     const [code, setCode] = useState(["", "", "", "", "", ""]);

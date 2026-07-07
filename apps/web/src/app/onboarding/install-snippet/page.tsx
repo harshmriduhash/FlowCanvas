@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Code2, Copy, Check, ArrowRight } from "lucide-react";
 
 export default function InstallSnippetPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-surface-muted flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full" /></div>}>
+            <InstallSnippetContent />
+        </Suspense>
+    );
+}
+
+function InstallSnippetContent() {
     const searchParams = useSearchParams();
     const projectId = searchParams.get("projectId") || "prj_abc123";
     const [copied, setCopied] = useState(false);

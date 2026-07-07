@@ -42,3 +42,5 @@ apps/web/public/loader.js
 # Prisma generated client (auto-generated on deploy)
 node_modules/.prisma/
 packages/db/node_modules/
+.vercel
+.env*
