@@ -35,12 +35,18 @@ export async function POST(req: Request) {
         }
 
         if (process.env.NODE_ENV === "production" && resend) {
-            await resend.emails.send({
-                from: "FlowCanvas <auth@flowcanvas.dev>",
-                to: email,
-                subject: "Your FlowCanvas verification code",
-                text: `Your verification code is: ${code}`,
-            });
+            try {
+                await resend.emails.send({
+                    from: "FlowCanvas <onboarding@resend.dev>",
+                    to: email,
+                    subject: "Your FlowCanvas verification code",
+                    text: `Your verification code is: ${code}`,
+                });
+            } catch (emailErr: any) {
+                console.error("[AUTH] Resend email error:", emailErr);
+                // Still return success — OTP is saved in DB, user just won't get the email
+                // In production with a verified domain, swap from address to auth@flowcanvas.dev
+            }
         } else {
             console.log("************************************************");
             console.log(`[AUTH] CODE FOR ${email}: ${code}`);
